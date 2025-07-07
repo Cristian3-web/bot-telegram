@@ -3,7 +3,12 @@
 
 """
 bot do telegram que você pode dar /start e /help
+utilize o ambiente virtual venv que está nomeado de .venv
 """
+__version__ = "0.0.3"
+__author__ = "Cristian"
+__lincense__ = "licensed"
+
 import os
 import sys
 import psutil

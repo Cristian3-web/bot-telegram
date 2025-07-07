@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
+import psutil
 import logging
 from dotenv import load_dotenv
-
 from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import (
@@ -14,60 +15,94 @@ from telegram.ext import (
     ContextTypes,
     filters,
 )
+from telegram.error import Conflict
 
-# Caminho absoluto pro .env
+# --- Função para evitar múltiplas instâncias ---
+
+def checar_instancias():
+    """Impede múltiplas instâncias do bot rodando ao mesmo tempo."""
+    atual_pid = os.getpid()
+    nome_script = os.path.basename(__file__)
+
+    for proc in psutil.process_iter(attrs=["pid", "cmdline"]):
+        try:
+            cmdline = proc.info["cmdline"]
+            pid = proc.info["pid"]
+
+            if cmdline and nome_script in ' '.join(cmdline) and pid != atual_pid:
+                print(f"❌ Já existe outra instância rodando (PID: {pid})")
+                sys.exit(1)
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
+
+# Chama a função logo no início do programa
+checar_instancias()
+
+# --- Carregando .env ---
+
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
-
-# Carrega variáveis de ambiente do .env
 if os.path.exists(dotenv_path):
     load_dotenv(dotenv_path)
 else:
     print(f"AVISO: Arquivo .env não encontrado em {dotenv_path}")
 
-# Lê o TOKEN do .env
 token = os.getenv("TOKEN")
 
-# Configura logging
+# --- Configura logging ---
+
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
 )
 logger = logging.getLogger(__name__)
 
-# Verifica se o token foi carregado
 if not token:
     logger.error("TOKEN não encontrado no .env")
-    exit(1)
+    sys.exit(1)
 
-# /start
+# --- Handlers ---
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     await update.message.reply_text(
-        f"Hi {user.mention_markdown_v2()}!",
-        parse_mode=ParseMode.MARKDOWN_V2
+        f"Olá, {user.first_name}! 👋\n\n"
+        "Eu sou seu bot Telegram. Use /help para ver os comandos disponíveis.",
+        parse_mode=ParseMode.HTML
     )
 
-# /help
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("Help!")
+    help_text = (
+        "Aqui estão os comandos que você pode usar:\n"
+        "/start - Inicia o bot e mostra uma mensagem de boas-vindas\n"
+        "/help - Mostra esta mensagem de ajuda\n"
+        "Qualquer outra mensagem que você enviar será repetida por mim."
+    )
+    await update.message.reply_text(help_text)
 
-# Qualquer outra mensagem
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text(update.message.text)
+    await update.message.reply_text(f"Você disse: {update.message.text}")
 
-# Função principal
+# --- Antes do polling, remove webhook ativo ---
+
+async def on_startup(app):
+    await app.bot.delete_webhook()
+
+# --- Função principal ---
+
 def main():
     try:
-        app = ApplicationBuilder().token(token).build()
+        app = ApplicationBuilder().token(token).post_init(on_startup).build()
 
         app.add_handler(CommandHandler("start", start))
         app.add_handler(CommandHandler("help", help_command))
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
         app.run_polling()
+
+    except Conflict:
+        logger.error("Erro de conflito: outra instância do bot está rodando")
     except Exception as e:
         logger.error(f"Erro ao iniciar o bot: {e}")
 
-# Executa se rodado diretamente
 if __name__ == "__main__":
     main()

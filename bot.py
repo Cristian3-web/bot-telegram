@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+bot do telegram que você pode dar /start e /help
+"""
 import os
 import sys
 import psutil
@@ -30,7 +33,7 @@ def checar_instancias():
             pid = proc.info["pid"]
 
             if cmdline and nome_script in ' '.join(cmdline) and pid != atual_pid:
-                print(f"❌ Já existe outra instância rodando (PID: {pid})")
+                print(f"❌ Já existe outra instância rodando/ (PID: {pid})")
                 sys.exit(1)
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             continue

@@ -9,7 +9,6 @@ Utilize ambiente virtual venv nomeado como .venv
 __version__ = "0.0.3"
 __author__ = "Cristian"
 __license__ = "licensed"
-
 import os
 import sys
 import psutil

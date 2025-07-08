@@ -2,12 +2,13 @@
 # -*- coding: utf-8 -*-
 
 """
-bot do telegram que você pode dar /start e /help
-utilize o ambiente virtual venv que está nomeado de .venv
+Bot do Telegram com comandos /start e /help.
+Utilize ambiente virtual venv nomeado como .venv
 """
+
 __version__ = "0.0.3"
 __author__ = "Cristian"
-__lincense__ = "licensed"
+__license__ = "licensed"
 
 import os
 import sys
@@ -38,7 +39,7 @@ def checar_instancias():
             pid = proc.info["pid"]
 
             if cmdline and nome_script in ' '.join(cmdline) and pid != atual_pid:
-                print(f"❌ Já existe outra instância rodando/ (PID: {pid})")
+                print(f"❌ Já existe outra instância rodando (PID: {pid})")
                 sys.exit(1)
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             continue
@@ -49,9 +50,7 @@ checar_instancias()
 # --- Carregando .env ---
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
-if os.path.exists(dotenv_path):
-    load_dotenv(dotenv_path)
-else:
+if not load_dotenv(dotenv_path):
     print(f"AVISO: Arquivo .env não encontrado em {dotenv_path}")
 
 token = os.getenv("TOKEN")
